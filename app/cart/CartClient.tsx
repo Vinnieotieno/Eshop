@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import { useState } from 'react';
 import { Trash2 } from 'lucide-react';
@@ -6,68 +6,56 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import Image from 'next/image';  // Import Image component for optimized images
-import { useCart } from '@/hooks/useCart';  // Import the useCart hook for cart management
+import Image from 'next/image';
+import { useCart } from '@/hooks/useCart';
+import { CartProductType } from '@/types/cart';
 
 export default function CartClient() {
-  const { cartProducts, setCartProducts, handleAddProductToCart } = useCart();  // Get cart items and cart management functions
-  const [selectedItems, setSelectedItems] = useState<number[]>([]);  // State for selected items
+  const { cartProducts, setCartProducts, handleAddProductToCart } = useCart();
+  const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
-  // Function to handle changes in product quantity
   const handleQuantityChange = (id: number, newQuantity: number) => {
-    if (!cartProducts) return;
-
-    const updatedProducts = cartProducts.map(item =>
-      item.id === id ? { ...item, quantity: newQuantity } : item
+    const updatedProducts = cartProducts.map((item: CartProductType) =>
+      item.id === id ? { ...item, quantity: Number(newQuantity) } : item
     );
     setCartProducts(updatedProducts);
   };
 
-  // Function to handle the deletion of a product
   const handleDeleteItem = (id: number) => {
-    if (!cartProducts) return;
-
-    const updatedProducts = cartProducts.filter(item => item.id !== id);
+    const updatedProducts = cartProducts.filter((item: CartProductType) => item.id !== id);
     setCartProducts(updatedProducts);
     setSelectedItems(selectedItems.filter(itemId => itemId !== id));
   };
 
-  // Function to handle selecting/unselecting an individual item
   const handleSelectItem = (id: number) => {
-    setSelectedItems(prevSelected =>
+    setSelectedItems((prevSelected) =>
       prevSelected.includes(id)
-        ? prevSelected.filter(itemId => itemId !== id)
+        ? prevSelected.filter((itemId) => itemId !== id)
         : [...prevSelected, id]
     );
   };
 
-  // Function to handle selecting/unselecting all items
   const handleSelectAll = () => {
-    if (!cartProducts) return;
-
     setSelectedItems(
       selectedItems.length === cartProducts.length
         ? []
-        : cartProducts.map(item => item.id)
+        : cartProducts.map((item) => item.id)
     );
   };
 
-  // Function to handle deleting all selected items
   const handleDeleteSelected = () => {
-    if (!cartProducts) return;
-
-    const updatedProducts = cartProducts.filter(item => !selectedItems.includes(item.id));
+    const updatedProducts = cartProducts.filter(
+      (item: CartProductType) => !selectedItems.includes(item.id)
+    );
     setCartProducts(updatedProducts);
     setSelectedItems([]);
   };
 
-  // Calculate the subtotal of the cart
-  const subtotal = cartProducts?.reduce((sum, item) => sum + item.price * item.quantity, 0) || 0;
+  const subtotal = cartProducts.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   return (
     <div className="container mx-auto p-4">
-      
-      <p className="mb-4">{cartProducts?.length || 0} items in your cart.</p>
+      <p className="mb-4">{cartProducts.length} items in your cart.</p>
 
       <div className="flex flex-col lg:flex-row gap-8">
         <div className="lg:w-2/3">
@@ -75,30 +63,32 @@ export default function CartClient() {
             <div className="flex justify-between items-center mb-4">
               <Checkbox
                 id="select-all"
-                checked={selectedItems.length === cartProducts?.length}
-                onChange={handleSelectAll}  // Change to proper handler
+                checked={selectedItems.length === cartProducts.length}
+                onChange={handleSelectAll}
               />
-              <Button variant="destructive" onClick={handleDeleteSelected} disabled={selectedItems.length === 0}>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteSelected}
+                disabled={selectedItems.length === 0}
+              >
                 Delete Selected
               </Button>
             </div>
 
-            {cartProducts?.map(item => (
+            {cartProducts.map((item: CartProductType) => (
               <div key={item.id} className="flex items-center gap-4 py-4 border-b">
                 <Checkbox
                   id={`item-${item.id}`}
                   checked={selectedItems.includes(item.id)}
-                  onChange={() => handleSelectItem(item.id)}  // Use `onChange`
+                  onChange={() => handleSelectItem(item.id)}
                 />
                 <Image
                   src={item.image}
                   alt={item.name}
-                  width={item.width || 500}   // Use dynamic width if available
-                  height={item.height || 500} // Use dynamic height if available
-                  layout="responsive"         // Makes the image responsive
-                  sizes="(max-width: 768px) 100vw, 
-                         (max-width: 1200px) 50vw, 
-                         25vw"                // Responsive behavior across screen sizes
+                  width={item.width || 500}
+                  height={item.height || 500}
+                  layout="responsive"
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   className="object-cover"
                 />
                 <div className="flex-grow">
@@ -108,10 +98,12 @@ export default function CartClient() {
                   <div className="flex items-center gap-2 mt-2">
                     <Select
                       value={item.quantity.toString()}
-                      onValueChange={(value) => handleQuantityChange(item.id, parseInt(value))}
+                      onValueChange={(value) => handleQuantityChange(item.id, Number(value))}
                     >
-                      {[1, 2, 3, 4, 5].map(num => (
-                        <option key={num} value={num.toString()}>{num}</option>
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <option key={num} value={num.toString()}>
+                          {num}
+                        </option>
                       ))}
                     </Select>
                     <Button variant="ghost" size="icon" onClick={() => handleDeleteItem(item.id)}>
@@ -130,7 +122,6 @@ export default function CartClient() {
             <h2 className="text-xl font-semibold mb-4">Calculated Shipping</h2>
             <Select>
               <option value="">Select Country</option>
-              {/* Add more country options here */}
             </Select>
             <div className="flex gap-2 mt-2">
               <Input placeholder="State / City" />

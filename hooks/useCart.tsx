@@ -2,7 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { CartProductType } from "@/app/product/[productId]/ProductDetails";
 import { toast } from "react-hot-toast";
 
-// Define the shape of the CartContext
 type CartContextType = {
   cartTotalQty: number;
   cartProducts: CartProductType[];
@@ -10,7 +9,6 @@ type CartContextType = {
   handleRemoveProductFromCart: (id: number) => void;
 };
 
-// Create the CartContext
 export const CartContext = createContext<CartContextType | null>(null);
 
 interface Props {
@@ -21,40 +19,55 @@ export const CartContextProvider: React.FC<Props> = ({ children }) => {
   const [cartTotalQty, setCartTotalQty] = useState(0);
   const [cartProducts, setCartProducts] = useState<CartProductType[]>([]);
 
-  // Load cart items from localStorage on component mount
+  // Load cart items from localStorage on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
-      try {
-        const storedCartItems = localStorage.getItem('eShopCartItems');
-        const parsedCartItems: CartProductType[] = storedCartItems ? JSON.parse(storedCartItems) : [];
-        setCartProducts(parsedCartItems);
-        const totalQty = parsedCartItems.reduce((acc, item) => acc + item.quantity, 0);
-        setCartTotalQty(totalQty);
-      } catch (error) {
-        console.error("Error loading cart from localStorage", error);
-      }
+      const loadCartFromStorage = () => {
+        try {
+          const storedCartItems = localStorage.getItem('eShopCartItems');
+          const parsedCartItems: CartProductType[] = storedCartItems ? JSON.parse(storedCartItems) : [];
+          setCartProducts(parsedCartItems);
+          const totalQty = parsedCartItems.reduce((acc, item) => acc + item.quantity, 0);
+          setCartTotalQty(totalQty);
+        } catch (error) {
+          console.error("Error loading cart from localStorage", error);
+        }
+      };
+      
+      loadCartFromStorage();
+      
+      // Listen to localStorage changes (e.g., different tab)
+      window.addEventListener('storage', loadCartFromStorage);
+      
+      return () => {
+        window.removeEventListener('storage', loadCartFromStorage);
+      };
     }
   }, []);
 
-  // Function to handle adding products to the cart
+  // Save cart to localStorage and recalculate total quantity
+  const saveCartToStorage = (updatedCart: CartProductType[]) => {
+    try {
+      localStorage.setItem('eShopCartItems', JSON.stringify(updatedCart));
+    } catch (error) {
+      console.error("Error saving cart to localStorage", error);
+    }
+  };
+
   const handleAddProductToCart = useCallback((product: CartProductType) => {
     setCartProducts((prevProducts) => {
       let updatedCart: CartProductType[];
 
       const existingProduct = prevProducts.find(item => item.id === product.id);
       if (existingProduct) {
-        updatedCart = prevProducts.map(item => 
+        updatedCart = prevProducts.map(item =>
           item.id === product.id ? { ...item, quantity: item.quantity + product.quantity } : item
         );
       } else {
         updatedCart = [...prevProducts, product];
       }
 
-      try {
-        localStorage.setItem('eShopCartItems', JSON.stringify(updatedCart));
-      } catch (error) {
-        console.error("Error saving cart to localStorage", error);
-      }
+      saveCartToStorage(updatedCart);
       
       const totalQty = updatedCart.reduce((acc, item) => acc + item.quantity, 0);
       setCartTotalQty(totalQty);
@@ -63,24 +76,25 @@ export const CartContextProvider: React.FC<Props> = ({ children }) => {
     });
   }, []);
 
-  // Function to handle removing products from the cart
   const handleRemoveProductFromCart = useCallback((id: number) => {
     setCartProducts((prevProducts) => {
       const updatedCart = prevProducts.filter(item => item.id !== id);
-      try {
-        localStorage.setItem('eShopCartItems', JSON.stringify(updatedCart));
-      } catch (error) {
-        console.error("Error saving updated cart to localStorage", error);
-      }
+      
+      saveCartToStorage(updatedCart);
 
       const totalQty = updatedCart.reduce((acc, item) => acc + item.quantity, 0);
       setCartTotalQty(totalQty);
-      toast.success("Product removed from cart");
+
+      if (updatedCart.length === 0) {
+        toast.success("Cart is now empty");
+      } else {
+        toast.success("Product removed from cart");
+      }
+
       return updatedCart;
     });
   }, []);
 
-  // CartContext value that will be passed down to components
   const value: CartContextType = {
     cartTotalQty,
     cartProducts,
@@ -91,7 +105,6 @@ export const CartContextProvider: React.FC<Props> = ({ children }) => {
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 
-// Hook to access the cart context
 export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
   if (context === null) {
