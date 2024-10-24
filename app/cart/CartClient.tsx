@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import Image from 'next/image';  // Import Image component for optimized images
 import { useCart } from '@/hooks/useCart';  // Import the useCart hook for cart management
 
 export default function CartClient() {
@@ -75,7 +76,7 @@ export default function CartClient() {
               <Checkbox
                 id="select-all"
                 checked={selectedItems.length === cartProducts?.length}
-                onCheckedChange={handleSelectAll}
+                onChange={handleSelectAll}  // Change to proper handler
               />
               <Button variant="destructive" onClick={handleDeleteSelected} disabled={selectedItems.length === 0}>
                 Delete Selected
@@ -85,11 +86,21 @@ export default function CartClient() {
             {cartProducts?.map(item => (
               <div key={item.id} className="flex items-center gap-4 py-4 border-b">
                 <Checkbox
-                  id={`item-KES{item.id}`}
+                  id={`item-${item.id}`}
                   checked={selectedItems.includes(item.id)}
-                  onCheckedChange={() => handleSelectItem(item.id)}
+                  onChange={() => handleSelectItem(item.id)}  // Use `onChange`
                 />
-                <img src={item.image} alt={item.name} className="w-24 h-24 object-cover" />
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  width={item.width || 500}   // Use dynamic width if available
+                  height={item.height || 500} // Use dynamic height if available
+                  layout="responsive"         // Makes the image responsive
+                  sizes="(max-width: 768px) 100vw, 
+                         (max-width: 1200px) 50vw, 
+                         25vw"                // Responsive behavior across screen sizes
+                  className="object-cover"
+                />
                 <div className="flex-grow">
                   <h3 className="font-semibold">{item.name}</h3>
                   <p className="text-sm text-gray-600">Color: {item.color}</p>
